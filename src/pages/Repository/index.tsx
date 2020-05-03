@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouteMatch, Link } from 'react-router-dom';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { Header, RepositoryInfo, Issues } from './styles';
@@ -9,8 +9,41 @@ interface RepositoryParams {
     repository: string;
 }
 
+interface Repository {
+    full_name: string;
+    description: string;
+    starsgazers_count: number;
+    forks_count: number;
+    open_issues_count: number;
+    owner: {
+        login: string;
+        avatar_url: string;
+    };
+}
+
+interface Issue {
+    title: string;
+    id: number;
+    html_url: string;
+    user: {
+        login: string;
+    };
+}
+
 const Repository: React.FC = () => {
     const { params } = useRouteMatch<RepositoryParams>();
+    const [repository, setRepository] = useState<Repository | null>(null);
+    const [issues, setIssues] = useState<Issue[]>([]);
+
+    useEffect(() => {
+        api.get(`repos/${params.repository}`).then((response) => {
+            setRepository(response.data);
+        });
+
+        api.get(`repos/${params.repository}/issues`).then((response) => {
+            setIssues(response.data);
+        });
+    }, [params.repository]);
 
     return (
         <>
@@ -22,42 +55,46 @@ const Repository: React.FC = () => {
                 </Link>
             </Header>
 
-            <RepositoryInfo>
-                <header>
-                    <img
-                        src="https://avatars2.githubusercontent.com/u/34757240?s=460&u=aff2f7d37b1a87484bc7b8daca3c6bfdf8b475e3&v=4"
-                        alt="Avatar url"
-                    />
-                    <div>
-                        <strong>node-acl-example</strong>
-                        <p>desc fake</p>
-                    </div>
-                </header>
-                <ul>
-                    <li>
-                        <strong>1877</strong>
-                        <span>Stars</span>
-                    </li>
-                    <li>
-                        <strong>1877</strong>
-                        <span>Forks</span>
-                    </li>
-                    <li>
-                        <strong>1877</strong>
-                        <span>Issues Abertas</span>
-                    </li>
-                </ul>
-            </RepositoryInfo>
+            {repository && (
+                <RepositoryInfo>
+                    <header>
+                        <img
+                            src={repository.owner.avatar_url}
+                            alt={repository.owner.login}
+                        />
+                        <div>
+                            <strong>{repository.full_name}</strong>
+                            <p>{repository.description}</p>
+                        </div>
+                    </header>
+                    <ul>
+                        <li>
+                            <strong>{repository.starsgazers_count}</strong>
+                            <span>Stars</span>
+                        </li>
+                        <li>
+                            <strong>{repository.forks_count}</strong>
+                            <span>Forks</span>
+                        </li>
+                        <li>
+                            <strong>{repository.open_issues_count}</strong>
+                            <span>Issues Abertas</span>
+                        </li>
+                    </ul>
+                </RepositoryInfo>
+            )}
 
             <Issues>
-                <Link to="asdasd">
-                    <div>
-                        <strong>repo name</strong>
-                        <p>desc</p>
-                    </div>
+                {issues.map((issue) => (
+                    <a key={issue.id} href={issue.html_url}>
+                        <div>
+                            <strong>{issue.title}</strong>
+                            <p>{issue.user.login}</p>
+                        </div>
 
-                    <FiChevronRight size={20} />
-                </Link>
+                        <FiChevronRight size={20} />
+                    </a>
+                ))}
             </Issues>
         </>
     );
